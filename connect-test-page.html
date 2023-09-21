@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Get XPUB</title>
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            font-family: Arial, sans-serif;
+        }
+        
+        .container {
+            text-align: center;
+        }
+        
+        .button {
+            margin-top: 5px;
+            background-color: #007BFF;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        
+        .button:hover {
+            background-color: #0056b3;
+        }
+
+        .text-field {
+            margin-top: 0px;
+            margin-bottom: 15px;
+            font-size: 16px;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            width: 160px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <input type="text" class="text-field" id="accountNumberField" placeholder="Enter account number" onkeydown="checkEnter(event)">
+        <button class="button" onclick="getTrezorPublicKey()">Get Trezor Public Key</button>
+        <p id="accountNumberResult" style="display: none;"></p>
+
+    </div>
+
+    <script src="https://connect.trezor.io/9/trezor-connect.js"></script>
+
+    <script>
+
+        // Initialize Trezor Connect
+        TrezorConnect.init({
+            lazyLoad: true,
+            manifest: {
+                email: 'jan.setina@satoshilabs.com',
+                appUrl: 'http://hannsek.io',
+            },
+        })
+        
+        function getTrezorPublicKey() {
+            var accountNumberField = document.getElementById("accountNumberField");
+            var accountNumberResult = document.getElementById("accountNumberResult");
+            var accountNumber = accountNumberField.value;
+
+             if (!accountNumber || isNaN(accountNumber)){
+            // Handle invalid input (non-numeric or empty)
+            accountNumberResult.textContent = "Invalid account number";
+            accountNumberResult.style.display = "block";
+            return;
+            }
+
+            var derivationPath = "m/44'/0'/0'/0/" + accountNumber;
+            
+            TrezorConnect.getPublicKey({
+                path: derivationPath,
+                coin: 'btc',
+                showOnTrezor: true,
+            }).then((response) => {
+                if (response.success) {
+                    var publicKey = response.payload.publicKey;
+                    displayPublicKey(publicKey);
+                } else {
+                    // Handle the error
+                    console.error("Error:", response.payload.error);
+                }
+            });
+        }
+
+        function displayPublicKey(publicKey) {
+            var accountNumberResult = document.getElementById("accountNumberResult");
+            accountNumberResult.textContent = "Trezor Public Key: " + publicKey;
+            accountNumberResult.style.display = "block";
+}
+
+        function checkEnter(event) {
+            if (event.keyCode === 13) {
+                getTrezorPublicKey();
+            }
+        }
+    </script>
+</body>
+</html>
