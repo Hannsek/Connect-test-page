@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Get XPUB</title>
+    <title>Connect methods</title>
     <style>
         body {
             display: flex;
@@ -48,9 +48,13 @@
 <body>
     <div class="container">
         <input type="text" class="text-field" id="accountNumberField" placeholder="Enter account number" onkeydown="checkEnter(event)">
-        <button class="button" onclick="getTrezorPublicKey()">Get Trezor Public Key</button>
-        <p id="accountNumberResult" style="display: none;"></p>
-
+        <button class="button" onclick="getTrezorPublicKey()">Get Xpub Info</button>
+        <p id="accountNumberResult" style="display: none;">0</p>
+        <br>
+        <input type="text" class="text-field" id="addressNumberField" placeholder="Enter address number" onkeydown="checkEnter(event)">
+        <button class="button" onclick="getTrezorAddress()">Get Address Info</button>
+        <p id="addressNumberResult" style="display: none;">0</p>
+        <p id="errorResult" style="display: none; color: red;"></p>
     </div>
 
     <script src="https://connect.trezor.io/9/trezor-connect.js"></script>
@@ -71,23 +75,64 @@
             var accountNumberResult = document.getElementById("accountNumberResult");
             var accountNumber = accountNumberField.value;
 
-             if (!accountNumber || isNaN(accountNumber)){
-            // Handle invalid input (non-numeric or empty)
-            accountNumberResult.textContent = "Invalid account number";
-            accountNumberResult.style.display = "block";
-            return;
+            // Check if the field is empty and set to "0"
+            if (!accountNumber) {
+                accountNumber = "0";
             }
 
-            var derivationPath = "m/44'/0'/0'/0/" + accountNumber;
+            if (isNaN(accountNumber)) {
+                // Handle invalid input (non-numeric)
+                accountNumberResult.textContent = "Invalid account number";
+                accountNumberResult.style.display = "none";
+                return;
+            }
+
+            var derivationPath = "m/86'/0'/" + accountNumber + "'";
             
             TrezorConnect.getPublicKey({
                 path: derivationPath,
                 coin: 'btc',
-                showOnTrezor: true,
+                showOnTrezor: false,
             }).then((response) => {
                 if (response.success) {
-                    var publicKey = response.payload.publicKey;
+                    var publicKey = response.payload.xpub;
                     displayPublicKey(publicKey);
+                } else {
+                    // Handle the error
+                    console.error("Error:", response.payload.error);
+                }
+            });
+        }
+
+        function getTrezorAddress() {
+            var addressNumberField = document.getElementById("addressNumberField");
+            var addressNumberResult = document.getElementById("addressNumberResult");
+            var addressNumber = addressNumberField.value;
+
+            // Check if the field is empty and set to "0"
+            if (!addressNumber) {
+                addressNumber = "0";
+            }
+
+            if (isNaN(addressNumber)){
+                // Handle invalid input (non-numeric)
+                var errorResult = document.getElementById("errorResult");
+                errorResult.textContent = "Invalid address number";
+                errorResult.style.display = "block";
+                addressNumberResult.style.display = "none";
+                return;
+            }
+
+            var derivationPath = "m/86'/0'/0'/0/" + addressNumber;
+            
+            TrezorConnect.getAddress({
+                path: derivationPath,
+                coin: 'btc',
+                showOnTrezor: false,
+            }).then((response) => {
+                if (response.success) {
+                    var address = response.payload.address;
+                    displayAddress(address);
                 } else {
                     // Handle the error
                     console.error("Error:", response.payload.error);
@@ -97,13 +142,19 @@
 
         function displayPublicKey(publicKey) {
             var accountNumberResult = document.getElementById("accountNumberResult");
-            accountNumberResult.textContent = "Trezor Public Key: " + publicKey;
+            accountNumberResult.innerHTML = "<strong>xpub: </strong>" + publicKey;
             accountNumberResult.style.display = "block";
-}
+        }
+        function displayAddress(address) {
+            var addressNumberResult = document.getElementById("addressNumberResult");
+            addressNumberResult.innerHTML = "<strong>Address: </strong>" + address;
+            addressNumberResult.style.display = "block";
+        }
 
         function checkEnter(event) {
             if (event.keyCode === 13) {
                 getTrezorPublicKey();
+                getTrezorAddress();
             }
         }
     </script>
